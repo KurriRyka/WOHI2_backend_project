@@ -1,0 +1,17 @@
+{
+  "name": "wohi2_backend_project",
+  "version": "1.0.0",
+  "description": "WOHI 2 project",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["express", "nodejs", "backend", "api"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}

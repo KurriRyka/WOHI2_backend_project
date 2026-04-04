@@ -1,0 +1,18 @@
+meta {
+  name: Edit question
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/4
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "question": "Is this a test?",
+    "answer": "Yes"
+  }
+}

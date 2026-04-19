@@ -1,91 +1,107 @@
 const express = require('express');
 const router = express.Router();
 
-const questions = require('../data/questions');
+const prisma = require("../lib/prisma");
 
-// GET /questions - Retrieve all questions
-// List all questions, or filter by keyword if query parameter is provided
-router.get('/', (req, res) => {
+function formatQuestion(question) {
+  return {
+    ...question,
+    date: question.date.toISOString().split("T")[0],
+  };
+}
 
-    const { keyword } = req.query;
-
-    if (!keyword) {
-        res.json(questions);
-    }
-    else {
-    const filteredQuestions = questions.filter(question =>
-        question.keywords.includes(keyword.toLowerCase())
-        );
-        res.json(filteredQuestions);
+// GET /questions - get all questions
+// List all question, (no keyword in the qieston project)
+router.get('/', async (req, res) => {
+    try {
+        const questions = await prisma.question.findMany();
+        res.json(questions.map(formatQuestion));
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
-// GET /posts/:postId
-// Show a specific post
-router.get('/:id', (req, res) => {
-    const Qid = Number(req.params.id);
-    const question = questions.find(q => q.id === Qid);
+// GET /questions/:id - get a specific question
+router.get('/:id', async (req, res) => {
+    try {
+        const Qid = Number(req.params.id);
+        const question = await prisma.question.findUnique({
+            where: { id: Qid }
+        });
 
-    if (!question) {
-        return res.status(404).json({ error: 'Question not found' });
+        if (!question) {
+            return res.status(404).json({ error: 'Question not found' });
+        }
+        res.json(formatQuestion(question));
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
     }
-    res.json(question);
 });
 
-// POST /questions - Create a new question
+// POST /questions - create a new question
+router.post('/', async (req, res) => {
+    try {
+        const { question, answer } = req.body;
+        if (!question || !answer) {
+            return res.status(400).json({ error: 'Missing required fields: question, answer' });
+        }
 
-router.post('/', (req, res) => {
-
-    const { question, answer }  = req.body;
-    if (!question || !answer) {
-        return res.status(400).json({ error: 'Missing required fields: question, answer' });
+        const newQuestion = await prisma.question.create({
+            data: {
+                question,
+                answer,
+                date: new Date()
+            }
+        });
+        res.status(201).json(formatQuestion(newQuestion));
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
     }
-    const currentMaxId = questions.length === 0 ? 0 : Math.max(...questions.map(q => q.id));
-
-    const newQuestion = { id: currentMaxId + 1,
-        question,
-        answer
-    };
-
-    questions.push(newQuestion);
-    res.status(201).json(newQuestion);
 });
 
-// PUT /questions/:id - Update an existing question
-router.put('/:id', (req, res) => {
-    const Qid = Number(req.params.id);
-    const { question, answer } = req.body;
+// PUT /questions/:id - replace the existing question
+router.put('/:id', async (req, res) => {
+    try {
+        const Qid = Number(req.params.id);
+        const { question, answer } = req.body;
 
-    const questionId = questions.findIndex(q => q.id === Qid);
+        if (!question || !answer) {
+            return res.status(400).json({ error: 'Missing required fields: question, answer' });
+        }
 
-    if (questionId === -1) {
-        return res.status(404).json({ error: 'Question not found' });
+        const updatedQuestion = await prisma.question.update({
+            where: { id: Qid },
+            data: {
+                question,
+                answer,
+                date: new Date()
+            }
+        });
+        res.json(formatQuestion(updatedQuestion));
+    } catch (error) {
+        if (error.code === 'P2025') {
+            return res.status(404).json({ error: 'Question not found' });
+        }
+        res.status(500).json({ error: 'Internal server error' });
     }
-
-    if (!question || !answer) {
-        return res.status(400).json({ error: 'Missing required fields: question, answer' });
-    }
-
-    questions[questionId].question = question;
-    questions[questionId].answer = answer;
-    res.json(questions[questionId]);
-
 });
 
-// DELETE /questions/:id - Delete a question
-router.delete('/:id', (req, res) => {
-    const Qid = Number(req.params.id);
-    const questionIndex = questions.findIndex(q => q.id === Qid);
+// DELETE /questions/:id - delete a specific question
+router.delete('/:id', async (req, res) => {
+    try {
+        const Qid = Number(req.params.id);
 
-    if (questionIndex === -1) {
-        return res.status(404).json({ error: 'Question not found' });
+        const deletedQuestion = await prisma.question.delete({
+            where: { id: Qid }
+        });
+
+        res.json({ message: 'Question deleted successfully', deletedQuestion: formatQuestion(deletedQuestion) });
+    } catch (error) {
+        if (error.code === 'P2025') {
+            return res.status(404).json({ error: 'Question not found' });
+        }
+        res.status(500).json({ error: 'Internal server error' });
     }
-
-    const deletedQuestion = questions.splice(questionIndex, 1);
-
-
-    res.json({ message: 'Question deleted successfully', deletedQuestion: deletedQuestion[0] } );
-
 });
 
 module.exports = router;

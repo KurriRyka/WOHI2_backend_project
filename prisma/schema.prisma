@@ -18,6 +18,16 @@ model Question {
   question    String    @db.VarChar(255)
   answer      String    @db.VarChar(255)
   date     DateTime
+  userId   Int
+  user     User @relation(fields: [userId], references: [id])
 
   @@map("questions")
+}
+
+model User {
+  id       Int       @id @default(autoincrement())
+  email     String    @unique @db.VarChar(255)
+  password  String    @db.VarChar(255)
+  name      String    @db.VarChar(100)
+  questions Question[]
 }

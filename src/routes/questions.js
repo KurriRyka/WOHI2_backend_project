@@ -1,7 +1,11 @@
 const express = require('express');
 const router = express.Router();
-
 const prisma = require("../lib/prisma");
+
+const authenticate = require("../middleware/auth");
+const isOwner = require("../middleware/isOwner");
+
+router.use(authenticate);
 
 function formatQuestion(question) {
   return {
@@ -50,7 +54,8 @@ router.post('/', async (req, res) => {
             data: {
                 question,
                 answer,
-                date: new Date()
+                date: new Date(),
+                userId: req.user.userId
             }
         });
         res.status(201).json(formatQuestion(newQuestion));
@@ -60,7 +65,7 @@ router.post('/', async (req, res) => {
 });
 
 // PUT /questions/:id - replace the existing question
-router.put('/:id', async (req, res) => {
+router.put('/:id', isOwner, async (req, res) => {
     try {
         const Qid = Number(req.params.id);
         const { question, answer } = req.body;
@@ -87,7 +92,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE /questions/:id - delete a specific question
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', isOwner, async (req, res) => {
     try {
         const Qid = Number(req.params.id);
 

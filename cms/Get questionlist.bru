@@ -4,8 +4,15 @@ meta {
   seq: 1
 }
 
-get {
-  url: {{baseUrl}}
-  body: none
+post {
+  url: http://localhost:3000/api/auth/login
+  body: json
   auth: none
+}
+
+body:json {
+  {
+    "email": "esim2@gmail.com",
+    "password": "esim2"
+  }
 }
